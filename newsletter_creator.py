@@ -52,7 +52,7 @@ def create_email(check_articles, email_data):
     msg['To'] = toaddr
     msg['Subject'] = "Nove clanky z tyinternety.cz"
 
-    articles = "\n ".join(check_articles)
+    # was not working with: articles = "\n ".join(check_articles) and then in body with .format(check_articles())
     body = "Toto jsou nejnovejsi clanky z tyinternety.cz:\n {}".format(articles)
     msg.attach(MIMEText(body, "plain", "utf-8"))
 
