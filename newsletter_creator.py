@@ -1,13 +1,12 @@
-# Newsletter creator extracts tags containing article titles and their urls
-# from homepage tyinternety.cz, cleans them from html and sends those
-# by email to receiver's email address. Script is then run on personal computer
-# once a week via Windows Task Scheduler.
+# Newsletter creator extracts article titles and their urls
+# from homepage tyinternety.cz and sends those by email.
 #
 # There has to be module :email_data with email account access info.
 # The module has to include variables:
 # * openkeyword: password for gmail account
 # * sender: sender email address
 # * receiver: receiver email address
+from typing import List, Tuple
 
 import requests
 
@@ -16,16 +15,11 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-import email_data
+from email_data import sender, receiver, openkeyword
 
 
-def get_articles():
-    """Parse web for html tags.
-
-    Find class entry-title used in article titles tags.
-
-    :return: [dict] with article titles as keys and article urls as values
-    """
+def get_article_pairs() -> List[Tuple[str, str]]:
+    """Parse web tyinternety.cz and find articles and their titles."""
     url = "https://tyinternety.cz/"
     headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) "
                              "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 "
@@ -36,38 +30,21 @@ def get_articles():
     soup = BeautifulSoup(html, 'lxml')
     articles = soup.find_all(class_="entry-title")
     article_soup = BeautifulSoup(str(articles), 'lxml')
-    urls = str(article_soup.find_all('a'))
-    urls_list = urls.split('</a>, ')
-    articles_dict = {}
-    for value in urls_list:
-        head, sep, tail = value.partition('\">')
-        tag, part, link = head.partition('href=\"')
-        if '</a>]' in tail:
-            tail = tail.replace('</a>]', '')
-        if 'bookmark' in link:
-            url, separator, bookmark = link.partition('\"')
-            articles_dict[tail] = url
-        else:
-            articles_dict[tail] = link
-    return articles_dict
+
+    cleaned_articles_data = []
+    for article_data in article_soup.find_all("a"):
+        cleaned_articles_data.append((article_data.string, article_data["href"]))
+
+    return cleaned_articles_data
 
 
-def create_email(get_articles, email_data):
-    """Send email with article titles and their urls.
-
-    Nicely format article titles and urls, attach them to email body and send the email.
-
-    :param [dict] get_articles: Dictionary with extracted article titles and urls.
-    :param module email_data: Module with variables with email access info.
-    """
-    articles_dict = get_articles()
-    fromaddr = email_data.sender
-    toaddr = email_data.receiver
+def create_email(article_pairs: List[Tuple[str, str]], fromaddr: str, toaddr: str, openkeyword: str):
+    """Send email with article titles and their urls."""
     msg = MIMEMultipart()
-    msg['From'] = fromaddr
+    msg['From'] = sender
     msg['To'] = toaddr
     msg['Subject'] = 'Nové články na tyinternety.cz'
-    body = MIMEText(('\n\n'.join('{}\n{}'.format(key, value) for key, value in articles_dict.items())), 'plain')
+    body = MIMEText(('\n\n'.join('{}\n{}'.format(title, url) for (title, url) in article_pairs)), 'plain')
     msg.attach(body)
 
     server = smtplib.SMTP('smtp.gmail.com', 587)
@@ -75,7 +52,7 @@ def create_email(get_articles, email_data):
     server.ehlo()
     server.starttls()
     server.ehlo()
-    server.login(fromaddr, email_data.openkeyword)
+    server.login(fromaddr, openkeyword)
     text = msg.as_string()
     server.sendmail(fromaddr, toaddr, text)
     server.quit()
@@ -83,5 +60,5 @@ def create_email(get_articles, email_data):
 
 
 if __name__ == "__main__":
-    get_articles()
-    create_email(get_articles, email_data)
+    article_pairs = get_article_pairs()
+    create_email(article_pairs, sender, receiver, openkeyword)
