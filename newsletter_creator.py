@@ -28,12 +28,11 @@ def get_article_pairs() -> List[Tuple[str, str]]:
     html = response.text
 
     soup = BeautifulSoup(html, 'lxml')
-    articles = soup.find_all(class_="entry-title")
-    article_soup = BeautifulSoup(str(articles), 'lxml')
+    articles = soup.select('h1[class="entry-title"]')
 
     cleaned_articles_data = []
-    for article_data in article_soup.find_all("a"):
-        cleaned_articles_data.append((article_data.string, article_data["href"]))
+    for article in articles:
+        cleaned_articles_data.append((article.text.strip("\n"), article.contents[1].attrs["href"]))
 
     return cleaned_articles_data
 
