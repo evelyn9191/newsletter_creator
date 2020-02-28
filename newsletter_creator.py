@@ -38,7 +38,7 @@ def get_article_pairs() -> List[Tuple[str, str]]:
     return cleaned_articles_data
 
 
-def create_email(article_pairs: List[Tuple[str, str]], fromaddr: str, toaddr: str, openkeyword: str):
+def send_email(article_pairs: List[Tuple[str, str]], fromaddr: str, toaddr: str, openkeyword: str):
     """Send email with article titles and their urls."""
     msg = MIMEMultipart()
     msg['From'] = sender
@@ -61,4 +61,4 @@ def create_email(article_pairs: List[Tuple[str, str]], fromaddr: str, toaddr: st
 
 if __name__ == "__main__":
     article_pairs = get_article_pairs()
-    create_email(article_pairs, sender, receiver, openkeyword)
+    send_email(article_pairs, sender, receiver, openkeyword)
